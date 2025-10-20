@@ -2,74 +2,97 @@
 <html>
 <head>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
-    <title>Obstacle Avoidance Game</title>
+    <title>Obstacle Avoidance Game - First Person</title>
 </head>
 <body>
     <a-scene background="color: #87CEEB" vr-mode-ui="enabled: false">
-        <!-- Player -->
+        <!-- Player (invisible in first person) -->
         <a-box id="player" 
-               position="0 1 0" 
+               position="0 1.6 0" 
                color="blue" 
                width="0.5" 
-               height="1" 
-               depth="0.5">
+               height="1.8" 
+               depth="0.5"
+               visible="false">
         </a-box>
         
-        <!-- Ground -->
+        <!-- Ground with texture for better depth perception -->
         <a-plane position="0 0 0" 
                  rotation="-90 0 0" 
                  width="50" 
-                 height="100" 
+                 height="200" 
                  color="green"
-                 repeat="10 20">
+                 repeat="25 100">
         </a-plane>
         
-        <!-- Camera follows player -->
+        <!-- First Person Camera -->
         <a-camera id="camera" 
-                  position="0 3 5" 
-                  look-at="#player">
+                  position="0 1.6 0" 
+                  look-controls="enabled: false"
+                  wasd-controls="enabled: false">
+            
+            <!-- HUD Elements attached to camera -->
+            <a-text id="scoreText" 
+                    position="-1.5 1 -3" 
+                    value="Score: 0" 
+                    color="white"
+                    scale="2 2 2">
+            </a-text>
+            
+            <!-- Crosshair for center reference -->
+            <a-ring position="0 0 -2" 
+                    radius-inner="0.01" 
+                    radius-outer="0.02" 
+                    color="white"
+                    opacity="0.5">
+            </a-ring>
+            
+            <!-- Game Over Screen -->
+            <a-text id="gameOverText" 
+                    position="0 0.5 -3" 
+                    value="" 
+                    color="red"
+                    scale="3 3 3"
+                    visible="false"
+                    align="center">
+            </a-text>
+            
+            <a-text id="finalScoreText" 
+                    position="0 0 -3" 
+                    value="" 
+                    color="red"
+                    scale="2 2 2"
+                    visible="false"
+                    align="center">
+            </a-text>
+            
+            <a-text id="restartText" 
+                    position="0 -0.5 -3" 
+                    value="Press R to Restart" 
+                    color="white"
+                    scale="1.5 1.5 1.5"
+                    visible="false"
+                    align="center">
+            </a-text>
+
+            <!-- Instructions -->
+            <a-text id="instructionsText" 
+                    position="0 -1 -3" 
+                    value="A/D: Strafe | W/Space: Jump | S: Crouch | Mouse: Look Around" 
+                    color="yellow"
+                    scale="1 1 1"
+                    align="center">
+            </a-text>
+            
+            <!-- Speed indicator -->
+            <a-text id="speedText" 
+                    position="1.5 1 -3" 
+                    value="Speed: 1.0x" 
+                    color="cyan"
+                    scale="1.5 1.5 1.5">
+            </a-text>
         </a-camera>
         
-        <!-- Score Display -->
-        <a-text id="scoreText" 
-                position="-2 4 3" 
-                value="Score: 0" 
-                color="black"
-                scale="1.5 1.5 1.5">
-        </a-text>
-        
-        <!-- Game Over Screen (hidden initially) -->
-        <a-text id="gameOverText" 
-                position="0 3 2" 
-                value="" 
-                color="red"
-                scale="2 2 2"
-                visible="false">
-        </a-text>
-        
-        <a-text id="finalScoreText" 
-                position="0 2.5 2" 
-                value="" 
-                color="red"
-                scale="1.5 1.5 1.5"
-                visible="false">
-        </a-text>
-        
-        <a-text id="restartText" 
-                position="0 2 2" 
-                value="Press R to Restart" 
-                color="white"
-                scale="1.2 1.2 1.2"
-                visible="false">
-        </a-text>
-
-        <!-- Instructions -->
-        <a-text id="instructionsText" 
-                position="0 1.5 2" 
-                value="A/D: Move Left/Right | W/Space: Jump | S: Crouch" 
-                color="yellow"
-                scale="1 1 1">
-        </a-text>
     </a-scene>
 
     <script>
@@ -79,8 +102,8 @@
             let score = 0;
             let gameRunning = false;
             let obstacles = [];
-            let playerSpeed = 0.1;
-            let obstacleSpeed = 0.1;
+            let playerSpeed = 0.12;
+            let obstacleSpeed = 0.12;
             let scoreInterval;
             let obstacleInterval;
             let gameLoopInterval;
@@ -91,7 +114,7 @@
             let isJumping = false;
             let isCrouching = false;
             let playerX = 0;
-            let playerY = 1;
+            let playerY = 1.6;
             let playerZ = 0;
             
             // Movement keys
@@ -108,6 +131,12 @@
             let finalScoreText = document.getElementById('finalScoreText');
             let restartText = document.getElementById('restartText');
             let instructionsText = document.getElementById('instructionsText');
+            let speedText = document.getElementById('speedText');
+            
+            // Enable mouse look
+            function enableMouseLook() {
+                camera.setAttribute('look-controls', 'enabled: true');
+            }
             
             // Start the game
             function startGame() {
@@ -115,16 +144,19 @@
                 score = 0;
                 gameRunning = true;
                 obstacles = [];
-                playerSpeed = 0.1;
-                obstacleSpeed = 0.1;
+                playerSpeed = 0.12;
+                obstacleSpeed = 0.12;
                 
                 // Reset player position
                 playerX = 0;
-                playerY = 1;
+                playerY = 1.6;
                 playerZ = 0;
                 player.setAttribute('position', `${playerX} ${playerY} ${playerZ}`);
-                player.setAttribute('height', '1');
-                camera.setAttribute('position', `${playerX} 3 5`);
+                camera.setAttribute('position', `${playerX} ${playerY} ${playerZ}`);
+                player.setAttribute('height', '1.8');
+                
+                // Enable mouse look
+                enableMouseLook();
                 
                 // Hide game over screen
                 gameOverText.setAttribute('visible', false);
@@ -148,13 +180,15 @@
                         score += 10;
                         scoreText.setAttribute('value', 'Score: ' + score);
                         // Increase difficulty over time
-                        playerSpeed = Math.min(0.15, 0.1 + score * 0.00002);
-                        obstacleSpeed = Math.min(0.2, 0.1 + score * 0.00003);
+                        let speedMultiplier = 1 + (score * 0.00005);
+                        playerSpeed = Math.min(0.25, 0.12 * speedMultiplier);
+                        obstacleSpeed = Math.min(0.3, 0.12 * speedMultiplier);
+                        speedText.setAttribute('value', 'Speed: ' + speedMultiplier.toFixed(1) + 'x');
                     }
                 }, 100);
                 
                 // Start spawning obstacles
-                obstacleInterval = setInterval(spawnObstacle, 2000);
+                obstacleInterval = setInterval(spawnObstacle, 1800);
                 
                 // Start game loop
                 gameLoopInterval = setInterval(updateGame, 16); // ~60fps
@@ -165,15 +199,19 @@
                 if (!gameRunning) return;
                 
                 let obstacle = document.createElement('a-box');
-                let xPos = (Math.random() - 0.5) * 8; // Random x position (-4 to 4)
-                let zPos = playerZ - 20; // Spawn ahead of player
+                let xPos = (Math.random() - 0.5) * 10; // Random x position (-5 to 5)
+                let zPos = playerZ - 25; // Spawn ahead of player
+                let height = Math.random() > 0.5 ? 2 : 3; // Random height
                 
-                obstacle.setAttribute('position', `${xPos} 1 ${zPos}`);
+                obstacle.setAttribute('position', `${xPos} ${height/2} ${zPos}`);
                 obstacle.setAttribute('color', 'red');
-                obstacle.setAttribute('width', '1');
-                obstacle.setAttribute('height', '2');
-                obstacle.setAttribute('depth', '1');
+                obstacle.setAttribute('width', '1.2');
+                obstacle.setAttribute('height', `${height}`);
+                obstacle.setAttribute('depth', '1.2');
                 obstacle.setAttribute('class', 'obstacle');
+                
+                // Add some visual effects
+                obstacle.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 3000');
                 
                 document.querySelector('a-scene').appendChild(obstacle);
                 obstacles.push(obstacle);
@@ -186,23 +224,17 @@
                 // Move player forward automatically
                 playerZ -= playerSpeed;
                 
-                // Handle left/right movement
-                if (keys.left && playerX > -4) {
-                    playerX -= 0.1;
+                // Handle left/right strafing
+                if (keys.left && playerX > -6) {
+                    playerX -= 0.15;
                 }
-                if (keys.right && playerX < 4) {
-                    playerX += 0.1;
+                if (keys.right && playerX < 6) {
+                    playerX += 0.15;
                 }
                 
-                // Update player position
+                // Update positions
                 player.setAttribute('position', `${playerX} ${playerY} ${playerZ}`);
-                
-                // Update camera to follow player
-                camera.setAttribute('position', `${playerX} 3 ${playerZ + 5}`);
-                camera.setAttribute('look-at', `${playerX} ${playerY} ${playerZ}`);
-                
-                // Update score position to stay in view
-                scoreText.setAttribute('position', `${playerX - 2} 4 ${playerZ - 2}`);
+                camera.setAttribute('position', `${playerX} ${playerY} ${playerZ}`);
                 
                 // Update obstacles and check collisions
                 for (let i = obstacles.length - 1; i >= 0; i--) {
@@ -216,16 +248,17 @@
                     if (!pos) continue;
                     
                     // Remove obstacles that are far behind player
-                    if (pos.z > playerZ + 10) {
+                    if (pos.z > playerZ + 15) {
                         obstacle.remove();
                         obstacles.splice(i, 1);
                         continue;
                     }
                     
-                    // Check collision
-                    if (Math.abs(pos.x - playerX) < 0.8 && 
-                        Math.abs(pos.z - playerZ) < 0.8 &&
-                        Math.abs(pos.y - playerY) < 1) {
+                    // Check collision with more precise detection
+                    if (Math.abs(pos.x - playerX) < 1 && 
+                        Math.abs(pos.z - playerZ) < 1 &&
+                        playerY < pos.y + obstacle.getAttribute('height')/2 && 
+                        playerY + 1.8 > pos.y - obstacle.getAttribute('height')/2) {
                         gameOver();
                         return;
                     }
@@ -241,11 +274,6 @@
                 if (scoreInterval) clearInterval(scoreInterval);
                 if (obstacleInterval) clearInterval(obstacleInterval);
                 if (gameLoopInterval) clearInterval(gameLoopInterval);
-                
-                // Position game over screen in front of camera
-                gameOverText.setAttribute('position', `${playerX} 3 ${playerZ - 3}`);
-                finalScoreText.setAttribute('position', `${playerX} 2.5 ${playerZ - 3}`);
-                restartText.setAttribute('position', `${playerX} 2 ${playerZ - 3}`);
                 
                 // Hide instructions
                 instructionsText.setAttribute('visible', false);
@@ -286,21 +314,21 @@
                 // Jump (Space or W key)
                 if ((event.code === 'Space' || event.key.toLowerCase() === 'w') && !isJumping && !isCrouching) {
                     isJumping = true;
-                    playerY = 2.5; // jump height
+                    playerY = 2.8; // jump height
                     
                     setTimeout(() => {
                         if (gameRunning && isJumping) {
-                            playerY = 1;
+                            playerY = isCrouching ? 1.2 : 1.6;
                             isJumping = false;
                         }
-                    }, 600); // jump duration
+                    }, 700); // jump duration
                 }
                 
                 // Crouch (S key)
                 if (event.key.toLowerCase() === 's' && !isJumping && !isCrouching) {
                     isCrouching = true;
-                    playerY = 0.3;
-                    player.setAttribute('height', '0.6');
+                    playerY = 1.2;
+                    player.setAttribute('height', '1.2');
                 }
             });
             
@@ -312,8 +340,15 @@
                 // Stop crouching
                 if (event.key.toLowerCase() === 's' && isCrouching && !isJumping) {
                     isCrouching = false;
-                    playerY = 1;
-                    player.setAttribute('height', '1');
+                    playerY = 1.6;
+                    player.setAttribute('height', '1.8');
+                }
+            });
+            
+            // Click to start mouse look
+            document.addEventListener('click', () => {
+                if (gameRunning) {
+                    camera.components['look-controls'].pitchObject.rotation.x = 0;
                 }
             });
             
@@ -330,5 +365,4 @@
     </script>
 </body>
 </html>
-
 
