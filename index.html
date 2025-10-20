@@ -8,7 +8,7 @@
     <a-scene background="color: #87CEEB" vr-mode-ui="enabled: false">
         <!-- Player -->
         <a-box id="player" 
-               position="0 1 -3" 
+               position="0 1 0" 
                color="blue" 
                width="0.5" 
                height="1" 
@@ -16,50 +16,57 @@
         </a-box>
         
         <!-- Ground -->
-        <a-plane position="0 0 -4" 
+        <a-plane position="0 0 0" 
                  rotation="-90 0 0" 
                  width="50" 
-                 height="50" 
-                 color="green">
+                 height="100" 
+                 color="green"
+                 repeat="10 20">
         </a-plane>
+        
+        <!-- Camera follows player -->
+        <a-camera id="camera" 
+                  position="0 3 5" 
+                  look-at="#player">
+        </a-camera>
         
         <!-- Score Display -->
         <a-text id="scoreText" 
-                position="-3 3 -5" 
+                position="-2 4 3" 
                 value="Score: 0" 
                 color="black"
-                scale="2 2 2">
+                scale="1.5 1.5 1.5">
         </a-text>
         
         <!-- Game Over Screen (hidden initially) -->
         <a-text id="gameOverText" 
-                position="0 2 -5" 
-                value="" 
-                color="red"
-                scale="3 3 3"
-                visible="false">
-        </a-text>
-        
-        <a-text id="finalScoreText" 
-                position="0 1 -5" 
+                position="0 3 2" 
                 value="" 
                 color="red"
                 scale="2 2 2"
                 visible="false">
         </a-text>
         
+        <a-text id="finalScoreText" 
+                position="0 2.5 2" 
+                value="" 
+                color="red"
+                scale="1.5 1.5 1.5"
+                visible="false">
+        </a-text>
+        
         <a-text id="restartText" 
-                position="0 0 -5" 
+                position="0 2 2" 
                 value="Press R to Restart" 
                 color="white"
-                scale="1.5 1.5 1.5"
+                scale="1.2 1.2 1.2"
                 visible="false">
         </a-text>
 
         <!-- Instructions -->
         <a-text id="instructionsText" 
-                position="0 -1 -5" 
-                value="W/Space: Jump | S: Crouch | Avoid Red Obstacles!" 
+                position="0 1.5 2" 
+                value="A/D: Move Left/Right | W/Space: Jump | S: Crouch" 
                 color="yellow"
                 scale="1 1 1">
         </a-text>
@@ -72,16 +79,28 @@
             let score = 0;
             let gameRunning = false;
             let obstacles = [];
-            let obstacleSpeed = 0.08;
+            let playerSpeed = 0.1;
+            let obstacleSpeed = 0.1;
             let scoreInterval;
             let obstacleInterval;
             let gameLoopInterval;
             
             // Player variables
             let player = document.getElementById('player');
+            let camera = document.getElementById('camera');
             let isJumping = false;
             let isCrouching = false;
-            let playerY = 1; // normal height
+            let playerX = 0;
+            let playerY = 1;
+            let playerZ = 0;
+            
+            // Movement keys
+            let keys = {
+                left: false,
+                right: false,
+                jump: false,
+                crouch: false
+            };
             
             // Get text elements
             let scoreText = document.getElementById('scoreText');
@@ -96,7 +115,16 @@
                 score = 0;
                 gameRunning = true;
                 obstacles = [];
-                obstacleSpeed = 0.08;
+                playerSpeed = 0.1;
+                obstacleSpeed = 0.1;
+                
+                // Reset player position
+                playerX = 0;
+                playerY = 1;
+                playerZ = 0;
+                player.setAttribute('position', `${playerX} ${playerY} ${playerZ}`);
+                player.setAttribute('height', '1');
+                camera.setAttribute('position', `${playerX} 3 5`);
                 
                 // Hide game over screen
                 gameOverText.setAttribute('visible', false);
@@ -104,12 +132,10 @@
                 restartText.setAttribute('visible', false);
                 instructionsText.setAttribute('visible', true);
                 
-                // Reset player position
-                player.setAttribute('position', '0 1 -3');
-                player.setAttribute('height', '1');
-                playerY = 1;
+                // Reset player state
                 isJumping = false;
                 isCrouching = false;
+                keys = { left: false, right: false, jump: false, crouch: false };
                 
                 // Clear any existing intervals
                 if (scoreInterval) clearInterval(scoreInterval);
@@ -122,38 +148,63 @@
                         score += 10;
                         scoreText.setAttribute('value', 'Score: ' + score);
                         // Increase difficulty over time
-                        obstacleSpeed = Math.min(0.15, 0.08 + score * 0.00001);
+                        playerSpeed = Math.min(0.15, 0.1 + score * 0.00002);
+                        obstacleSpeed = Math.min(0.2, 0.1 + score * 0.00003);
                     }
                 }, 100);
                 
                 // Start spawning obstacles
-                obstacleInterval = setInterval(spawnObstacle, 2500);
+                obstacleInterval = setInterval(spawnObstacle, 2000);
                 
                 // Start game loop
                 gameLoopInterval = setInterval(updateGame, 16); // ~60fps
             }
             
-            // Spawn obstacles
+            // Spawn obstacles ahead of player
             function spawnObstacle() {
                 if (!gameRunning) return;
                 
                 let obstacle = document.createElement('a-box');
-                let xPos = (Math.random() - 0.5) * 3; // Random x position
-                obstacle.setAttribute('position', `${xPos} 1 8`);
+                let xPos = (Math.random() - 0.5) * 8; // Random x position (-4 to 4)
+                let zPos = playerZ - 20; // Spawn ahead of player
+                
+                obstacle.setAttribute('position', `${xPos} 1 ${zPos}`);
                 obstacle.setAttribute('color', 'red');
-                obstacle.setAttribute('width', '0.8');
-                obstacle.setAttribute('height', '1.5');
-                obstacle.setAttribute('depth', '0.8');
+                obstacle.setAttribute('width', '1');
+                obstacle.setAttribute('height', '2');
+                obstacle.setAttribute('depth', '1');
                 obstacle.setAttribute('class', 'obstacle');
                 
                 document.querySelector('a-scene').appendChild(obstacle);
                 obstacles.push(obstacle);
             }
             
-            // Move obstacles and check collisions
+            // Update game logic
             function updateGame() {
                 if (!gameRunning) return;
                 
+                // Move player forward automatically
+                playerZ -= playerSpeed;
+                
+                // Handle left/right movement
+                if (keys.left && playerX > -4) {
+                    playerX -= 0.1;
+                }
+                if (keys.right && playerX < 4) {
+                    playerX += 0.1;
+                }
+                
+                // Update player position
+                player.setAttribute('position', `${playerX} ${playerY} ${playerZ}`);
+                
+                // Update camera to follow player
+                camera.setAttribute('position', `${playerX} 3 ${playerZ + 5}`);
+                camera.setAttribute('look-at', `${playerX} ${playerY} ${playerZ}`);
+                
+                // Update score position to stay in view
+                scoreText.setAttribute('position', `${playerX - 2} 4 ${playerZ - 2}`);
+                
+                // Update obstacles and check collisions
                 for (let i = obstacles.length - 1; i >= 0; i--) {
                     let obstacle = obstacles[i];
                     if (!obstacle || !obstacle.parentNode) {
@@ -164,21 +215,17 @@
                     let pos = obstacle.getAttribute('position');
                     if (!pos) continue;
                     
-                    pos.z -= obstacleSpeed;
-                    obstacle.setAttribute('position', pos);
-                    
-                    // Remove obstacles that are behind player
-                    if (pos.z < -5) {
+                    // Remove obstacles that are far behind player
+                    if (pos.z > playerZ + 10) {
                         obstacle.remove();
                         obstacles.splice(i, 1);
                         continue;
                     }
                     
-                    // Check collision with better detection
-                    let playerPos = player.getAttribute('position');
-                    if (Math.abs(pos.x - playerPos.x) < 0.6 && 
-                        Math.abs(pos.z - playerPos.z) < 0.6 &&
-                        Math.abs(pos.y - playerPos.y) < 0.8) {
+                    // Check collision
+                    if (Math.abs(pos.x - playerX) < 0.8 && 
+                        Math.abs(pos.z - playerZ) < 0.8 &&
+                        Math.abs(pos.y - playerY) < 1) {
                         gameOver();
                         return;
                     }
@@ -195,6 +242,11 @@
                 if (obstacleInterval) clearInterval(obstacleInterval);
                 if (gameLoopInterval) clearInterval(gameLoopInterval);
                 
+                // Position game over screen in front of camera
+                gameOverText.setAttribute('position', `${playerX} 3 ${playerZ - 3}`);
+                finalScoreText.setAttribute('position', `${playerX} 2.5 ${playerZ - 3}`);
+                restartText.setAttribute('position', `${playerX} 2 ${playerZ - 3}`);
+                
                 // Hide instructions
                 instructionsText.setAttribute('visible', false);
                 
@@ -209,7 +261,7 @@
             // Keyboard controls
             document.addEventListener('keydown', (event) => {
                 // Prevent default behavior for game keys
-                if (['Space', 'KeyW', 'KeyS', 'KeyR'].includes(event.code)) {
+                if (['Space', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyR'].includes(event.code)) {
                     event.preventDefault();
                 }
                 
@@ -227,16 +279,18 @@
                 
                 if (!gameRunning) return;
                 
+                // Movement keys
+                if (event.key.toLowerCase() === 'a') keys.left = true;
+                if (event.key.toLowerCase() === 'd') keys.right = true;
+                
                 // Jump (Space or W key)
                 if ((event.code === 'Space' || event.key.toLowerCase() === 'w') && !isJumping && !isCrouching) {
                     isJumping = true;
                     playerY = 2.5; // jump height
-                    player.setAttribute('position', `0 ${playerY} -3`);
                     
                     setTimeout(() => {
                         if (gameRunning && isJumping) {
                             playerY = 1;
-                            player.setAttribute('position', '0 1 -3');
                             isJumping = false;
                         }
                     }, 600); // jump duration
@@ -246,17 +300,19 @@
                 if (event.key.toLowerCase() === 's' && !isJumping && !isCrouching) {
                     isCrouching = true;
                     playerY = 0.3;
-                    player.setAttribute('position', `0 ${playerY} -3`);
                     player.setAttribute('height', '0.6');
                 }
             });
             
             document.addEventListener('keyup', (event) => {
+                // Movement keys
+                if (event.key.toLowerCase() === 'a') keys.left = false;
+                if (event.key.toLowerCase() === 'd') keys.right = false;
+                
                 // Stop crouching
                 if (event.key.toLowerCase() === 's' && isCrouching && !isJumping) {
                     isCrouching = false;
                     playerY = 1;
-                    player.setAttribute('position', '0 1 -3');
                     player.setAttribute('height', '1');
                 }
             });
@@ -274,3 +330,5 @@
     </script>
 </body>
 </html>
+
+
