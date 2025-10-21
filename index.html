@@ -2,11 +2,115 @@
 <html>
 <head>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
-    <title>Obstacle Avoidance Game - First Person</title>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
+    <title>Obstacle Avoidance Game - Complete VR Ready</title>
 </head>
 <body>
-    <a-scene background="color: #87CEEB" vr-mode-ui="enabled: false">
-        <!-- Player (invisible in first person) -->
+    <a-scene background="color: #87CEEB" 
+             vr-mode-ui="enabled: true"
+             device-orientation-permission-ui="enabled: false">
+        
+        <!-- Player rig for VR movement -->
+        <a-entity id="rig" 
+                  movement-controls="fly: false; constrainToNavMesh: false"
+                  position="0 0 0">
+            
+            <!-- VR Camera -->
+            <a-camera id="camera" 
+                      position="0 1.6 0"
+                      look-controls="pointerLockEnabled: false"
+                      wasd-controls="enabled: false">
+                
+                <!-- HUD Elements attached to camera -->
+                <a-text id="scoreText" 
+                        position="-1.5 1.2 -3" 
+                        value="Score: 0" 
+                        color="white"
+                        scale="2 2 2">
+                </a-text>
+                
+                <!-- Crosshair for center reference -->
+                <a-ring position="0 0 -2" 
+                        radius-inner="0.01" 
+                        radius-outer="0.02" 
+                        color="white"
+                        opacity="0.5">
+                </a-ring>
+                
+                <!-- Game Over Screen -->
+                <a-text id="gameOverText" 
+                        position="0 0.5 -3" 
+                        value="" 
+                        color="red"
+                        scale="3 3 3"
+                        visible="false"
+                        align="center">
+                </a-text>
+                
+                <a-text id="finalScoreText" 
+                        position="0 0 -3" 
+                        value="" 
+                        color="red"
+                        scale="2 2 2"
+                        visible="false"
+                        align="center">
+                </a-text>
+                
+                <a-text id="restartText" 
+                        position="0 -0.5 -3" 
+                        value="Desktop: Press R | VR: Squeeze both grips together" 
+                        color="white"
+                        scale="1.2 1.2 1.2"
+                        visible="false"
+                        align="center">
+                </a-text>
+
+                <!-- Instructions -->
+                <a-text id="instructionsText" 
+                        position="0 -1.2 -3" 
+                        value="Desktop: A/D: Strafe | W/Space: Jump | S: Crouch" 
+                        color="yellow"
+                        scale="1 1 1"
+                        align="center">
+                </a-text>
+                
+                <!-- Speed indicator -->
+                <a-text id="speedText" 
+                        position="1.5 1.2 -3" 
+                        value="Speed: 1.0x" 
+                        color="cyan"
+                        scale="1.5 1.5 1.5">
+                </a-text>
+                
+                <!-- VR Instructions (hidden initially) -->
+                <a-text id="vrInstructionsText" 
+                        position="0 -1.5 -3" 
+                        value="VR: Thumbstick: Move | Triggers: Jump | Grips: Crouch" 
+                        color="orange"
+                        scale="1 1 1"
+                        align="center"
+                        visible="false">
+                </a-text>
+            </a-camera>
+            
+            <!-- Left VR Controller with full support -->
+            <a-entity id="leftController"
+                      oculus-touch-controls="hand: left"
+                      vive-controls="hand: left"
+                      windows-motion-controls="hand: left"
+                      hand-controls="hand: left; handModelStyle: lowPoly; color: #ffcccc">
+            </a-entity>
+            
+            <!-- Right VR Controller with full support -->
+            <a-entity id="rightController"
+                      oculus-touch-controls="hand: right"
+                      vive-controls="hand: right" 
+                      windows-motion-controls="hand: right"
+                      hand-controls="hand: right; handModelStyle: lowPoly; color: #ccffcc">
+            </a-entity>
+        </a-entity>
+        
+        <!-- Player collision box (invisible) -->
         <a-box id="player" 
                position="0 1.6 0" 
                color="blue" 
@@ -16,7 +120,7 @@
                visible="false">
         </a-box>
         
-        <!-- Ground with texture for better depth perception -->
+        <!-- Ground with better texture for depth perception -->
         <a-plane position="0 0 0" 
                  rotation="-90 0 0" 
                  width="50" 
@@ -24,74 +128,6 @@
                  color="green"
                  repeat="25 100">
         </a-plane>
-        
-        <!-- Fixed First Person Camera (no mouse look) -->
-        <a-camera id="camera" 
-                  position="0 1.6 0" 
-                  look-controls="enabled: false"
-                  wasd-controls="enabled: false">
-            
-            <!-- HUD Elements attached to camera -->
-            <a-text id="scoreText" 
-                    position="-1.5 1 -3" 
-                    value="Score: 0" 
-                    color="white"
-                    scale="2 2 2">
-            </a-text>
-            
-            <!-- Crosshair for center reference -->
-            <a-ring position="0 0 -2" 
-                    radius-inner="0.01" 
-                    radius-outer="0.02" 
-                    color="white"
-                    opacity="0.5">
-            </a-ring>
-            
-            <!-- Game Over Screen -->
-            <a-text id="gameOverText" 
-                    position="0 0.5 -3" 
-                    value="" 
-                    color="red"
-                    scale="3 3 3"
-                    visible="false"
-                    align="center">
-            </a-text>
-            
-            <a-text id="finalScoreText" 
-                    position="0 0 -3" 
-                    value="" 
-                    color="red"
-                    scale="2 2 2"
-                    visible="false"
-                    align="center">
-            </a-text>
-            
-            <a-text id="restartText" 
-                    position="0 -0.5 -3" 
-                    value="Press R to Restart" 
-                    color="white"
-                    scale="1.5 1.5 1.5"
-                    visible="false"
-                    align="center">
-            </a-text>
-
-            <!-- Instructions -->
-            <a-text id="instructionsText" 
-                    position="0 -1 -3" 
-                    value="A/D: Strafe | W/Space: Jump | S: Crouch | Dodge the shapes!" 
-                    color="yellow"
-                    scale="1 1 1"
-                    align="center">
-            </a-text>
-            
-            <!-- Speed indicator -->
-            <a-text id="speedText" 
-                    position="1.5 1 -3" 
-                    value="Speed: 1.0x" 
-                    color="cyan"
-                    scale="1.5 1.5 1.5">
-            </a-text>
-        </a-camera>
         
     </a-scene>
 
@@ -103,20 +139,31 @@
             let gameRunning = false;
             let obstacles = [];
             let playerSpeed = 0.12;
+            let obstacleSpeed = 0.12;
             let scoreInterval;
             let obstacleInterval;
             let gameLoopInterval;
             
             // Player variables
             let player = document.getElementById('player');
+            let rig = document.getElementById('rig');
             let camera = document.getElementById('camera');
+            let leftController = document.getElementById('leftController');
+            let rightController = document.getElementById('rightController');
+            
             let isJumping = false;
             let isCrouching = false;
             let playerX = 0;
             let playerY = 1.6;
             let playerZ = 0;
+            let rigY = 0;
             
-            // Movement keys
+            // VR state tracking
+            let isVR = false;
+            let leftControllerData = {};
+            let rightControllerData = {};
+            
+            // Movement keys for desktop
             let keys = {
                 left: false,
                 right: false,
@@ -124,17 +171,218 @@
                 crouch: false
             };
             
-            // Get text elements
+            // Get all UI text elements
             let scoreText = document.getElementById('scoreText');
             let gameOverText = document.getElementById('gameOverText');
             let finalScoreText = document.getElementById('finalScoreText');
             let restartText = document.getElementById('restartText');
             let instructionsText = document.getElementById('instructionsText');
+            let vrInstructionsText = document.getElementById('vrInstructionsText');
             let speedText = document.getElementById('speedText');
             
-            // Obstacle shapes and colors
+            // Obstacle shapes and colors arrays
             const shapeTypes = ['box', 'sphere', 'cylinder', 'cone', 'dodecahedron', 'octahedron'];
             const colors = ['red', 'orange', 'purple', 'maroon', 'darkred', 'crimson'];
+            
+            // VR detection and controller setup
+            function setupVR() {
+                // Detect when entering/exiting VR mode
+                document.querySelector('a-scene').addEventListener('enter-vr', () => {
+                    console.log('Entered VR mode');
+                    isVR = true;
+                    updateInstructionsForVR();
+                });
+                
+                document.querySelector('a-scene').addEventListener('exit-vr', () => {
+                    console.log('Exited VR mode');
+                    isVR = false;
+                    updateInstructionsForDesktop();
+                });
+                
+                // Left controller event listeners
+                if (leftController) {
+                    leftController.addEventListener('thumbstickmoved', handleLeftThumbstick);
+                    leftController.addEventListener('triggerdown', handleLeftTrigger);
+                    leftController.addEventListener('triggerup', handleLeftTriggerUp);
+                    leftController.addEventListener('gripdown', handleLeftGrip);
+                    leftController.addEventListener('gripup', handleLeftGripUp);
+                    leftController.addEventListener('xbuttondown', handleXButton);
+                    leftController.addEventListener('ybuttondown', handleYButton);
+                }
+                
+                // Right controller event listeners
+                if (rightController) {
+                    rightController.addEventListener('thumbstickmoved', handleRightThumbstick);
+                    rightController.addEventListener('triggerdown', handleRightTrigger);
+                    rightController.addEventListener('triggerup', handleRightTriggerUp);
+                    rightController.addEventListener('gripdown', handleRightGrip);
+                    rightController.addEventListener('gripup', handleRightGripUp);
+                    rightController.addEventListener('abuttondown', handleAButton);
+                    rightController.addEventListener('bbuttondown', handleBButton);
+                }
+            }
+            
+            // VR Controller event handlers
+            function handleLeftThumbstick(event) {
+                leftControllerData.thumbstick = event.detail;
+            }
+            
+            function handleRightThumbstick(event) {
+                rightControllerData.thumbstick = event.detail;
+            }
+            
+            function handleLeftTrigger() {
+                if (gameRunning && !isJumping && !isCrouching) {
+                    jump();
+                }
+            }
+            
+            function handleLeftTriggerUp() {
+                // Trigger released
+            }
+            
+            function handleRightTrigger() {
+                if (gameRunning && !isJumping && !isCrouching) {
+                    jump();
+                }
+            }
+            
+            function handleRightTriggerUp() {
+                // Trigger released
+            }
+            
+            function handleLeftGrip() {
+                if (gameRunning && !isJumping) {
+                    startCrouch();
+                }
+                leftControllerData.grip = true;
+                
+                // Check for restart (both grips pressed)
+                checkForVRRestart();
+            }
+            
+            function handleLeftGripUp() {
+                if (gameRunning) {
+                    stopCrouch();
+                }
+                leftControllerData.grip = false;
+            }
+            
+            function handleRightGrip() {
+                if (gameRunning && !isJumping) {
+                    startCrouch();
+                }
+                rightControllerData.grip = true;
+                
+                // Check for restart (both grips pressed)
+                checkForVRRestart();
+            }
+            
+            function handleRightGripUp() {
+                if (gameRunning) {
+                    stopCrouch();
+                }
+                rightControllerData.grip = false;
+            }
+            
+            function handleXButton() {
+                // Left controller X button - could be used for special actions
+                if (gameRunning && !isJumping && !isCrouching) {
+                    jump();
+                }
+            }
+            
+            function handleYButton() {
+                // Left controller Y button - could be used for special actions
+            }
+            
+            function handleAButton() {
+                // Right controller A button - could be used for special actions
+                if (gameRunning && !isJumping && !isCrouching) {
+                    jump();
+                }
+            }
+            
+            function handleBButton() {
+                // Right controller B button - could be used for special actions
+            }
+            
+            // Check if both grips are pressed for VR restart
+            function checkForVRRestart() {
+                if (!gameRunning && leftControllerData.grip && rightControllerData.grip) {
+                    // Remove all obstacles
+                    obstacles.forEach(obstacleObj => {
+                        if (obstacleObj.element && obstacleObj.element.parentNode) {
+                            obstacleObj.element.remove();
+                        }
+                    });
+                    obstacles = [];
+                    startGame();
+                }
+            }
+            
+            // Movement functions
+            function jump() {
+                if (isJumping || isCrouching) return;
+                isJumping = true;
+                
+                if (isVR) {
+                    rigY = 1.2; // VR jump height
+                    rig.setAttribute('position', `${playerX} ${rigY} ${playerZ}`);
+                } else {
+                    playerY = 2.8; // Desktop jump height
+                }
+                
+                setTimeout(() => {
+                    if (gameRunning && isJumping) {
+                        if (isVR) {
+                            rigY = isCrouching ? -0.4 : 0;
+                            rig.setAttribute('position', `${playerX} ${rigY} ${playerZ}`);
+                        } else {
+                            playerY = isCrouching ? 1.2 : 1.6;
+                        }
+                        isJumping = false;
+                    }
+                }, 700); // jump duration
+            }
+            
+            function startCrouch() {
+                if (isCrouching || isJumping) return;
+                isCrouching = true;
+                
+                if (isVR) {
+                    rigY = -0.4; // VR crouch
+                    rig.setAttribute('position', `${playerX} ${rigY} ${playerZ}`);
+                } else {
+                    playerY = 1.2;
+                    player.setAttribute('height', '1.2');
+                }
+            }
+            
+            function stopCrouch() {
+                if (!isCrouching || isJumping) return;
+                isCrouching = false;
+                
+                if (isVR) {
+                    rigY = 0;
+                    rig.setAttribute('position', `${playerX} ${rigY} ${playerZ}`);
+                } else {
+                    playerY = 1.6;
+                    player.setAttribute('height', '1.8');
+                }
+            }
+            
+            function updateInstructionsForVR() {
+                instructionsText.setAttribute('visible', false);
+                vrInstructionsText.setAttribute('visible', true);
+                restartText.setAttribute('value', 'VR: Squeeze both grips together to restart');
+            }
+            
+            function updateInstructionsForDesktop() {
+                instructionsText.setAttribute('visible', true);
+                vrInstructionsText.setAttribute('visible', false);
+                restartText.setAttribute('value', 'Desktop: Press R to restart');
+            }
             
             // Start the game
             function startGame() {
@@ -143,25 +391,37 @@
                 gameRunning = true;
                 obstacles = [];
                 playerSpeed = 0.12;
+                obstacleSpeed = 0.12;
                 
                 // Reset player position
                 playerX = 0;
                 playerY = 1.6;
                 playerZ = 0;
+                rigY = 0;
+                
+                rig.setAttribute('position', `${playerX} ${rigY} ${playerZ}`);
                 player.setAttribute('position', `${playerX} ${playerY} ${playerZ}`);
-                camera.setAttribute('position', `${playerX} ${playerY} ${playerZ}`);
                 player.setAttribute('height', '1.8');
                 
                 // Hide game over screen
                 gameOverText.setAttribute('visible', false);
                 finalScoreText.setAttribute('visible', false);
                 restartText.setAttribute('visible', false);
-                instructionsText.setAttribute('visible', true);
+                
+                if (isVR) {
+                    vrInstructionsText.setAttribute('visible', true);
+                    instructionsText.setAttribute('visible', false);
+                } else {
+                    instructionsText.setAttribute('visible', true);
+                    vrInstructionsText.setAttribute('visible', false);
+                }
                 
                 // Reset player state
                 isJumping = false;
                 isCrouching = false;
                 keys = { left: false, right: false, jump: false, crouch: false };
+                leftControllerData = {};
+                rightControllerData = {};
                 
                 // Clear any existing intervals
                 if (scoreInterval) clearInterval(scoreInterval);
@@ -176,6 +436,7 @@
                         // Increase difficulty over time
                         let speedMultiplier = 1 + (score * 0.00005);
                         playerSpeed = Math.min(0.25, 0.12 * speedMultiplier);
+                        obstacleSpeed = Math.min(0.3, 0.12 * speedMultiplier);
                         speedText.setAttribute('value', 'Speed: ' + speedMultiplier.toFixed(1) + 'x');
                     }
                 }, 100);
@@ -234,7 +495,8 @@
                     // Add random rotation animation
                     let rotationAxis = ['x', 'y', 'z'][Math.floor(Math.random() * 3)];
                     let rotationSpeed = 2000 + Math.random() * 4000;
-                    obstacle.setAttribute('animation', `property: rotation; to: ${rotationAxis === 'x' ? '360' : '0'} ${rotationAxis === 'y' ? '360' : '0'} ${rotationAxis === 'z' ? '360' : '0'}; loop: true; dur: ${rotationSpeed}`);
+                    obstacle.setAttribute('animation', 
+                        `property: rotation; to: ${rotationAxis === 'x' ? '360' : '0'} ${rotationAxis === 'y' ? '360' : '0'} ${rotationAxis === 'z' ? '360' : '0'}; loop: true; dur: ${rotationSpeed}`);
                     
                     document.querySelector('a-scene').appendChild(obstacle);
                     obstacles.push({
@@ -251,17 +513,34 @@
                 // Move player forward automatically
                 playerZ -= playerSpeed;
                 
-                // Handle left/right strafing
-                if (keys.left && playerX > -8) {
-                    playerX -= 0.15;
-                }
-                if (keys.right && playerX < 8) {
-                    playerX += 0.15;
+                // Handle left/right movement
+                if (isVR) {
+                    // VR thumbstick movement
+                    if (leftControllerData.thumbstick && Math.abs(leftControllerData.thumbstick.x) > 0.1) {
+                        playerX += leftControllerData.thumbstick.x * 0.1;
+                        playerX = Math.max(-8, Math.min(8, playerX));
+                    }
+                    if (rightControllerData.thumbstick && Math.abs(rightControllerData.thumbstick.x) > 0.1) {
+                        playerX += rightControllerData.thumbstick.x * 0.1;
+                        playerX = Math.max(-8, Math.min(8, playerX));
+                    }
+                } else {
+                    // Desktop movement
+                    if (keys.left && playerX > -8) {
+                        playerX -= 0.15;
+                    }
+                    if (keys.right && playerX < 8) {
+                        playerX += 0.15;
+                    }
                 }
                 
                 // Update positions
-                player.setAttribute('position', `${playerX} ${playerY} ${playerZ}`);
-                camera.setAttribute('position', `${playerX} ${playerY} ${playerZ}`);
+                if (isVR) {
+                    rig.setAttribute('position', `${playerX} ${rigY} ${playerZ}`);
+                } else {
+                    player.setAttribute('position', `${playerX} ${playerY} ${playerZ}`);
+                    camera.setAttribute('position', `${playerX} ${playerY} ${playerZ}`);
+                }
                 
                 // Update obstacles and check collisions
                 for (let i = obstacles.length - 1; i >= 0; i--) {
@@ -307,6 +586,7 @@
                 
                 // Hide instructions
                 instructionsText.setAttribute('visible', false);
+                vrInstructionsText.setAttribute('visible', false);
                 
                 // Show game over screen
                 gameOverText.setAttribute('value', 'GAME OVER!');
@@ -316,7 +596,7 @@
                 restartText.setAttribute('visible', true);
             }
             
-            // Keyboard controls
+            // Keyboard controls for desktop
             document.addEventListener('keydown', (event) => {
                 // Prevent default behavior for game keys
                 if (['Space', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyR'].includes(event.code)) {
@@ -343,22 +623,12 @@
                 
                 // Jump (Space or W key)
                 if ((event.code === 'Space' || event.key.toLowerCase() === 'w') && !isJumping && !isCrouching) {
-                    isJumping = true;
-                    playerY = 2.8; // jump height
-                    
-                    setTimeout(() => {
-                        if (gameRunning && isJumping) {
-                            playerY = isCrouching ? 1.2 : 1.6;
-                            isJumping = false;
-                        }
-                    }, 700); // jump duration
+                    jump();
                 }
                 
                 // Crouch (S key)
                 if (event.key.toLowerCase() === 's' && !isJumping && !isCrouching) {
-                    isCrouching = true;
-                    playerY = 1.2;
-                    player.setAttribute('height', '1.2');
+                    startCrouch();
                 }
             });
             
@@ -369,18 +639,18 @@
                 
                 // Stop crouching
                 if (event.key.toLowerCase() === 's' && isCrouching && !isJumping) {
-                    isCrouching = false;
-                    playerY = 1.6;
-                    player.setAttribute('height', '1.8');
+                    stopCrouch();
                 }
             });
             
-            // Wait for scene to load, then start game
+            // Wait for scene to load, then setup VR and start game
             let scene = document.querySelector('a-scene');
             if (scene.hasLoaded) {
+                setupVR();
                 setTimeout(startGame, 1000);
             } else {
                 scene.addEventListener('loaded', () => {
+                    setupVR();
                     setTimeout(startGame, 1000);
                 });
             }
