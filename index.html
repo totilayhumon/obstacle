@@ -25,7 +25,7 @@
                  repeat="25 100">
         </a-plane>
         
-        <!-- First Person Camera -->
+        <!-- Fixed First Person Camera (no mouse look) -->
         <a-camera id="camera" 
                   position="0 1.6 0" 
                   look-controls="enabled: false"
@@ -78,7 +78,7 @@
             <!-- Instructions -->
             <a-text id="instructionsText" 
                     position="0 -1 -3" 
-                    value="A/D: Strafe | W/Space: Jump | S: Crouch | Mouse: Look Around" 
+                    value="A/D: Strafe | W/Space: Jump | S: Crouch | Dodge the shapes!" 
                     color="yellow"
                     scale="1 1 1"
                     align="center">
@@ -103,7 +103,6 @@
             let gameRunning = false;
             let obstacles = [];
             let playerSpeed = 0.12;
-            let obstacleSpeed = 0.12;
             let scoreInterval;
             let obstacleInterval;
             let gameLoopInterval;
@@ -133,10 +132,9 @@
             let instructionsText = document.getElementById('instructionsText');
             let speedText = document.getElementById('speedText');
             
-            // Enable mouse look
-            function enableMouseLook() {
-                camera.setAttribute('look-controls', 'enabled: true');
-            }
+            // Obstacle shapes and colors
+            const shapeTypes = ['box', 'sphere', 'cylinder', 'cone', 'dodecahedron', 'octahedron'];
+            const colors = ['red', 'orange', 'purple', 'maroon', 'darkred', 'crimson'];
             
             // Start the game
             function startGame() {
@@ -145,7 +143,6 @@
                 gameRunning = true;
                 obstacles = [];
                 playerSpeed = 0.12;
-                obstacleSpeed = 0.12;
                 
                 // Reset player position
                 playerX = 0;
@@ -154,9 +151,6 @@
                 player.setAttribute('position', `${playerX} ${playerY} ${playerZ}`);
                 camera.setAttribute('position', `${playerX} ${playerY} ${playerZ}`);
                 player.setAttribute('height', '1.8');
-                
-                // Enable mouse look
-                enableMouseLook();
                 
                 // Hide game over screen
                 gameOverText.setAttribute('visible', false);
@@ -182,39 +176,72 @@
                         // Increase difficulty over time
                         let speedMultiplier = 1 + (score * 0.00005);
                         playerSpeed = Math.min(0.25, 0.12 * speedMultiplier);
-                        obstacleSpeed = Math.min(0.3, 0.12 * speedMultiplier);
                         speedText.setAttribute('value', 'Speed: ' + speedMultiplier.toFixed(1) + 'x');
                     }
                 }, 100);
                 
-                // Start spawning obstacles
-                obstacleInterval = setInterval(spawnObstacle, 1800);
+                // Start spawning obstacles more frequently
+                obstacleInterval = setInterval(spawnObstacle, 1200);
                 
                 // Start game loop
                 gameLoopInterval = setInterval(updateGame, 16); // ~60fps
             }
             
-            // Spawn obstacles ahead of player
+            // Spawn various shaped obstacles around the player area
             function spawnObstacle() {
                 if (!gameRunning) return;
                 
-                let obstacle = document.createElement('a-box');
-                let xPos = (Math.random() - 0.5) * 10; // Random x position (-5 to 5)
-                let zPos = playerZ - 25; // Spawn ahead of player
-                let height = Math.random() > 0.5 ? 2 : 3; // Random height
+                // Spawn multiple obstacles at once sometimes
+                let numObstacles = Math.random() > 0.7 ? 2 : 1;
                 
-                obstacle.setAttribute('position', `${xPos} ${height/2} ${zPos}`);
-                obstacle.setAttribute('color', 'red');
-                obstacle.setAttribute('width', '1.2');
-                obstacle.setAttribute('height', `${height}`);
-                obstacle.setAttribute('depth', '1.2');
-                obstacle.setAttribute('class', 'obstacle');
-                
-                // Add some visual effects
-                obstacle.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 3000');
-                
-                document.querySelector('a-scene').appendChild(obstacle);
-                obstacles.push(obstacle);
+                for (let i = 0; i < numObstacles; i++) {
+                    let obstacle = document.createElement('a-' + shapeTypes[Math.floor(Math.random() * shapeTypes.length)]);
+                    
+                    // Spawn in a wider area around the player's path
+                    let xPos = (Math.random() - 0.5) * 16; // Much wider spawn area (-8 to 8)
+                    let zPos = playerZ - (15 + Math.random() * 15); // Spawn 15-30 units ahead
+                    let yPos = 0.5 + Math.random() * 2; // Random height between 0.5 and 2.5
+                    
+                    obstacle.setAttribute('position', `${xPos} ${yPos} ${zPos}`);
+                    obstacle.setAttribute('color', colors[Math.floor(Math.random() * colors.length)]);
+                    
+                    // Set size based on shape type
+                    let size = 0.8 + Math.random() * 1.2; // Random size between 0.8 and 2.0
+                    
+                    switch(obstacle.tagName.toLowerCase()) {
+                        case 'a-box':
+                            obstacle.setAttribute('width', size);
+                            obstacle.setAttribute('height', size);
+                            obstacle.setAttribute('depth', size);
+                            break;
+                        case 'a-sphere':
+                            obstacle.setAttribute('radius', size * 0.7);
+                            break;
+                        case 'a-cylinder':
+                            obstacle.setAttribute('radius', size * 0.6);
+                            obstacle.setAttribute('height', size * 1.5);
+                            break;
+                        case 'a-cone':
+                            obstacle.setAttribute('radius-bottom', size * 0.8);
+                            obstacle.setAttribute('height', size * 1.5);
+                            break;
+                        default:
+                            obstacle.setAttribute('radius', size * 0.7);
+                    }
+                    
+                    obstacle.setAttribute('class', 'obstacle');
+                    
+                    // Add random rotation animation
+                    let rotationAxis = ['x', 'y', 'z'][Math.floor(Math.random() * 3)];
+                    let rotationSpeed = 2000 + Math.random() * 4000;
+                    obstacle.setAttribute('animation', `property: rotation; to: ${rotationAxis === 'x' ? '360' : '0'} ${rotationAxis === 'y' ? '360' : '0'} ${rotationAxis === 'z' ? '360' : '0'}; loop: true; dur: ${rotationSpeed}`);
+                    
+                    document.querySelector('a-scene').appendChild(obstacle);
+                    obstacles.push({
+                        element: obstacle,
+                        size: size
+                    });
+                }
             }
             
             // Update game logic
@@ -225,10 +252,10 @@
                 playerZ -= playerSpeed;
                 
                 // Handle left/right strafing
-                if (keys.left && playerX > -6) {
+                if (keys.left && playerX > -8) {
                     playerX -= 0.15;
                 }
-                if (keys.right && playerX < 6) {
+                if (keys.right && playerX < 8) {
                     playerX += 0.15;
                 }
                 
@@ -238,7 +265,9 @@
                 
                 // Update obstacles and check collisions
                 for (let i = obstacles.length - 1; i >= 0; i--) {
-                    let obstacle = obstacles[i];
+                    let obstacleObj = obstacles[i];
+                    let obstacle = obstacleObj.element;
+                    
                     if (!obstacle || !obstacle.parentNode) {
                         obstacles.splice(i, 1);
                         continue;
@@ -248,17 +277,18 @@
                     if (!pos) continue;
                     
                     // Remove obstacles that are far behind player
-                    if (pos.z > playerZ + 15) {
+                    if (pos.z > playerZ + 20) {
                         obstacle.remove();
                         obstacles.splice(i, 1);
                         continue;
                     }
                     
-                    // Check collision with more precise detection
-                    if (Math.abs(pos.x - playerX) < 1 && 
-                        Math.abs(pos.z - playerZ) < 1 &&
-                        playerY < pos.y + obstacle.getAttribute('height')/2 && 
-                        playerY + 1.8 > pos.y - obstacle.getAttribute('height')/2) {
+                    // Check collision with size-aware detection
+                    let collisionDistance = obstacleObj.size * 0.8;
+                    if (Math.abs(pos.x - playerX) < collisionDistance && 
+                        Math.abs(pos.z - playerZ) < collisionDistance &&
+                        playerY < pos.y + obstacleObj.size && 
+                        playerY + 1.8 > pos.y - obstacleObj.size * 0.5) {
                         gameOver();
                         return;
                     }
@@ -295,9 +325,9 @@
                 
                 if (!gameRunning && event.key.toLowerCase() === 'r') {
                     // Remove all obstacles
-                    obstacles.forEach(obstacle => {
-                        if (obstacle && obstacle.parentNode) {
-                            obstacle.remove();
+                    obstacles.forEach(obstacleObj => {
+                        if (obstacleObj.element && obstacleObj.element.parentNode) {
+                            obstacleObj.element.remove();
                         }
                     });
                     obstacles = [];
@@ -345,13 +375,6 @@
                 }
             });
             
-            // Click to start mouse look
-            document.addEventListener('click', () => {
-                if (gameRunning) {
-                    camera.components['look-controls'].pitchObject.rotation.x = 0;
-                }
-            });
-            
             // Wait for scene to load, then start game
             let scene = document.querySelector('a-scene');
             if (scene.hasLoaded) {
@@ -365,4 +388,3 @@
     </script>
 </body>
 </html>
-
