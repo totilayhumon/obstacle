@@ -3,7 +3,7 @@
 <head>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
-    <title>Obstacle Avoidance Game - Fixed Crouching</title>
+    <title>Obstacle Avoidance Game - Infinite Ground</title>
 </head>
 <body>
     <a-scene background="color: #87CEEB" 
@@ -120,13 +120,32 @@
                visible="false">
         </a-box>
         
-        <!-- Ground with better texture for depth perception -->
-        <a-plane position="0 0 0" 
+        <!-- Initial ground planes - these will be managed dynamically -->
+        <a-plane id="ground1" 
+                 position="0 0 0" 
                  rotation="-90 0 0" 
                  width="50" 
-                 height="200" 
+                 height="100" 
                  color="green"
-                 repeat="25 100">
+                 repeat="25 50">
+        </a-plane>
+        
+        <a-plane id="ground2" 
+                 position="0 0 -100" 
+                 rotation="-90 0 0" 
+                 width="50" 
+                 height="100" 
+                 color="green"
+                 repeat="25 50">
+        </a-plane>
+        
+        <a-plane id="ground3" 
+                 position="0 0 -200" 
+                 rotation="-90 0 0" 
+                 width="50" 
+                 height="100" 
+                 color="green"
+                 repeat="25 50">
         </a-plane>
         
     </a-scene>
@@ -143,6 +162,10 @@
             let scoreInterval;
             let obstacleInterval;
             let gameLoopInterval;
+            
+            // Ground management
+            let groundPlanes = [];
+            let nextGroundZ = -300; // Next position to place ground
             
             // Player variables
             let player = document.getElementById('player');
@@ -188,6 +211,47 @@
             // Obstacle shapes and colors arrays
             const shapeTypes = ['box', 'sphere', 'cylinder', 'cone', 'dodecahedron', 'octahedron'];
             const colors = ['red', 'orange', 'purple', 'maroon', 'darkred', 'crimson'];
+            
+            // Initialize ground planes array
+            function initializeGround() {
+                groundPlanes = [
+                    document.getElementById('ground1'),
+                    document.getElementById('ground2'),
+                    document.getElementById('ground3')
+                ];
+            }
+            
+            // Manage infinite ground
+            function updateGround() {
+                // Check if we need to add more ground ahead
+                while (nextGroundZ > playerZ - 300) {
+                    let newGround = document.createElement('a-plane');
+                    newGround.setAttribute('position', `0 0 ${nextGroundZ}`);
+                    newGround.setAttribute('rotation', '-90 0 0');
+                    newGround.setAttribute('width', '50');
+                    newGround.setAttribute('height', '100');
+                    newGround.setAttribute('color', 'green');
+                    newGround.setAttribute('repeat', '25 50');
+                    
+                    document.querySelector('a-scene').appendChild(newGround);
+                    groundPlanes.push(newGround);
+                    nextGroundZ -= 100; // Move to next position
+                }
+                
+                // Remove ground planes that are far behind the player
+                for (let i = groundPlanes.length - 1; i >= 0; i--) {
+                    let ground = groundPlanes[i];
+                    if (ground && ground.parentNode) {
+                        let pos = ground.getAttribute('position');
+                        if (pos && pos.z > playerZ + 200) {
+                            ground.remove();
+                            groundPlanes.splice(i, 1);
+                        }
+                    } else {
+                        groundPlanes.splice(i, 1);
+                    }
+                }
+            }
             
             // VR detection and controller setup
             function setupVR() {
@@ -293,7 +357,7 @@
                 if (isVR) {
                     rigY = 1.2;
                     rig.setAttribute('position', `${playerX} ${rigY} ${playerZ}`);
-                    playerY = 1.6 + rigY; // Update collision detection position
+                    playerY = 1.6 + rigY;
                 } else {
                     playerY = 2.8;
                 }
@@ -319,15 +383,13 @@
                 if (isVR) {
                     rigY = -0.4;
                     rig.setAttribute('position', `${playerX} ${rigY} ${playerZ}`);
-                    playerY = 1.6 + rigY; // This makes playerY = 1.2
-                    playerHeight = 1.2; // Reduce collision height
+                    playerY = 1.6 + rigY;
+                    playerHeight = 1.2;
                 } else {
                     playerY = 1.2;
                     player.setAttribute('height', '1.2');
                     playerHeight = 1.2;
                 }
-                
-                console.log('Crouching - playerY:', playerY, 'playerHeight:', playerHeight);
             }
             
             function stopCrouch() {
@@ -344,8 +406,6 @@
                     player.setAttribute('height', '1.8');
                     playerHeight = 1.8;
                 }
-                
-                console.log('Standing - playerY:', playerY, 'playerHeight:', playerHeight);
             }
             
             function updateInstructionsForVR() {
@@ -357,7 +417,7 @@
             function updateInstructionsForDesktop() {
                 instructionsText.setAttribute('visible', true);
                 vrInstructionsText.setAttribute('visible', false);
-                restartText.setAttribute('value', 'Desktop: Press R to restart');
+                                restartText.setAttribute('value', 'Desktop: Press R to restart');
             }
             
             // Start the game
@@ -375,6 +435,7 @@
                 playerZ = 0;
                 rigY = 0;
                 playerHeight = 1.8;
+                nextGroundZ = -300; // Reset ground spawning
                 
                 rig.setAttribute('position', `${playerX} ${rigY} ${playerZ}`);
                 player.setAttribute('position', `${playerX} ${playerY} ${playerZ}`);
@@ -412,7 +473,7 @@
                         scoreText.setAttribute('value', 'Score: ' + score);
                         let speedMultiplier = 1 + (score * 0.00005);
                         playerSpeed = Math.min(0.25, 0.12 * speedMultiplier);
-                                               obstacleSpeed = Math.min(0.3, 0.12 * speedMultiplier);
+                        obstacleSpeed = Math.min(0.3, 0.12 * speedMultiplier);
                         speedText.setAttribute('value', 'Speed: ' + speedMultiplier.toFixed(1) + 'x');
                     }
                 }, 100);
@@ -483,7 +544,7 @@
                 }
             }
             
-            // FIXED COLLISION DETECTION - This was the main problem!
+            // FIXED COLLISION DETECTION
             function checkCollision(obstacleObj) {
                 let obstacle = obstacleObj.element;
                 let pos = obstacle.getAttribute('position');
@@ -505,22 +566,8 @@
                 // Check Z collision (forward/backward)
                 let zCollision = Math.abs(pos.z - playerZ) < (obstacleSize * 0.7 + playerDepth / 2);
                 
-                // Check Y collision (up/down) - This is the key fix!
+                // Check Y collision (up/down)
                 let yCollision = !(playerTop < obstacleBottom || playerBottom > obstacleTop);
-                
-                // Debug logging
-                if (xCollision && zCollision) {
-                    console.log('Near obstacle:', {
-                        isCrouching: isCrouching,
-                        playerY: playerY,
-                        playerBottom: playerBottom,
-                        playerTop: playerTop,
-                        obstacleBottom: obstacleBottom,
-                        obstacleTop: obstacleTop,
-                        yCollision: yCollision,
-                        currentPlayerHeight: currentPlayerHeight
-                    });
-                }
                 
                 return xCollision && zCollision && yCollision;
             }
@@ -531,6 +578,9 @@
                 
                 // Move player forward automatically
                 playerZ -= playerSpeed;
+                
+                // Update infinite ground
+                updateGround();
                 
                 // Handle left/right movement
                 if (isVR) {
@@ -556,7 +606,6 @@
                 // Update positions
                 if (isVR) {
                     rig.setAttribute('position', `${playerX} ${rigY} ${playerZ}`);
-                    // Update playerY for collision detection in VR
                     playerY = 1.6 + rigY;
                 } else {
                     player.setAttribute('position', `${playerX} ${playerY} ${playerZ}`);
@@ -663,10 +712,12 @@
             // Wait for scene to load, then setup VR and start game
             let scene = document.querySelector('a-scene');
             if (scene.hasLoaded) {
+                initializeGround();
                 setupVR();
                 setTimeout(startGame, 1000);
             } else {
                 scene.addEventListener('loaded', () => {
+                    initializeGround();
                     setupVR();
                     setTimeout(startGame, 1000);
                 });
@@ -675,3 +726,4 @@
     </script>
 </body>
 </html>
+
