@@ -3,7 +3,7 @@
 <head>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
-    <title>Obstacle Avoidance Game - Infinite Ground</title>
+    <title>Obstacle Avoidance Game - Color-Changing Ground</title>
 </head>
 <body>
     <a-scene background="color: #87CEEB" 
@@ -80,6 +80,15 @@
                         value="Speed: 1.0x" 
                         color="cyan"
                         scale="1.5 1.5 1.5">
+                </a-text>
+                
+                <!-- Level indicator -->
+                <a-text id="levelText" 
+                        position="0 1.5 -3" 
+                        value="Level: Grassland" 
+                        color="lime"
+                        scale="1.5 1.5 1.5"
+                        align="center">
                 </a-text>
                 
                 <!-- VR Instructions (hidden initially) -->
@@ -166,6 +175,22 @@
             // Ground management
             let groundPlanes = [];
             let nextGroundZ = -300; // Next position to place ground
+            let currentGroundColor = 'green';
+            let currentLevel = 0;
+            
+            // Level system with colors and names
+            const levels = [
+                { threshold: 0, color: 'green', name: 'Grassland', skyColor: '#87CEEB' },
+                { threshold: 1000, color: 'yellow', name: 'Desert', skyColor: '#F4A460' },
+                { threshold: 2500, color: 'orange', name: 'Canyon', skyColor: '#FF6347' },
+                { threshold: 4500, color: 'brown', name: 'Mountain', skyColor: '#8B4513' },
+                { threshold: 7000, color: 'gray', name: 'Stone Valley', skyColor: '#696969' },
+                { threshold: 10000, color: 'purple', name: 'Crystal Cave', skyColor: '#4B0082' },
+                { threshold: 15000, color: 'blue', name: 'Ice Realm', skyColor: '#4169E1' },
+                { threshold: 22000, color: 'red', name: 'Lava Fields', skyColor: '#8B0000' },
+                { threshold: 30000, color: 'black', name: 'Shadow Realm', skyColor: '#1C1C1C' },
+                { threshold: 50000, color: 'gold', name: 'Golden Paradise', skyColor: '#FFD700' }
+            ];
             
             // Player variables
             let player = document.getElementById('player');
@@ -207,6 +232,7 @@
             let instructionsText = document.getElementById('instructionsText');
             let vrInstructionsText = document.getElementById('vrInstructionsText');
             let speedText = document.getElementById('speedText');
+            let levelText = document.getElementById('levelText');
             
             // Obstacle shapes and colors arrays
             const shapeTypes = ['box', 'sphere', 'cylinder', 'cone', 'dodecahedron', 'octahedron'];
@@ -221,7 +247,43 @@
                 ];
             }
             
-            // Manage infinite ground
+            // Get current level based on score
+            function getCurrentLevel() {
+                for (let i = levels.length - 1; i >= 0; i--) {
+                    if (score >= levels[i].threshold) {
+                        return i;
+                    }
+                }
+                return 0;
+            }
+            
+            // Update level and ground color
+            function updateLevel() {
+                let newLevel = getCurrentLevel();
+                if (newLevel !== currentLevel) {
+                    currentLevel = newLevel;
+                    let levelData = levels[currentLevel];
+                    currentGroundColor = levelData.color;
+                    
+                    // Update level text
+                    levelText.setAttribute('value', `Level: ${levelData.name}`);
+                    levelText.setAttribute('color', levelData.color);
+                    
+                    // Change sky color
+                    document.querySelector('a-scene').setAttribute('background', `color: ${levelData.skyColor}`);
+                    
+                    // Update all existing ground planes
+                    groundPlanes.forEach(ground => {
+                        if (ground && ground.parentNode) {
+                            ground.setAttribute('color', currentGroundColor);
+                        }
+                    });
+                    
+                    console.log(`Level up! Now in: ${levelData.name}`);
+                }
+            }
+            
+            // Manage infinite ground with current color
             function updateGround() {
                 // Check if we need to add more ground ahead
                 while (nextGroundZ > playerZ - 300) {
@@ -230,7 +292,7 @@
                     newGround.setAttribute('rotation', '-90 0 0');
                     newGround.setAttribute('width', '50');
                     newGround.setAttribute('height', '100');
-                    newGround.setAttribute('color', 'green');
+                    newGround.setAttribute('color', currentGroundColor);
                     newGround.setAttribute('repeat', '25 50');
                     
                     document.querySelector('a-scene').appendChild(newGround);
@@ -417,7 +479,7 @@
             function updateInstructionsForDesktop() {
                 instructionsText.setAttribute('visible', true);
                 vrInstructionsText.setAttribute('visible', false);
-                                restartText.setAttribute('value', 'Desktop: Press R to restart');
+                restartText.setAttribute('value', 'Desktop: Press R to restart');
             }
             
             // Start the game
@@ -428,6 +490,8 @@
                 obstacles = [];
                 playerSpeed = 0.12;
                 obstacleSpeed = 0.12;
+                currentLevel = 0;
+                currentGroundColor = 'green';
                 
                 // Reset player position
                 playerX = 0;
@@ -436,6 +500,11 @@
                 rigY = 0;
                 playerHeight = 1.8;
                 nextGroundZ = -300; // Reset ground spawning
+                
+                // Reset environment
+                document.querySelector('a-scene').setAttribute('background', 'color: #87CEEB');
+                levelText.setAttribute('value', 'Level: Grassland');
+                levelText.setAttribute('color', 'lime');
                 
                 rig.setAttribute('position', `${playerX} ${rigY} ${playerZ}`);
                 player.setAttribute('position', `${playerX} ${playerY} ${playerZ}`);
@@ -475,6 +544,9 @@
                         playerSpeed = Math.min(0.25, 0.12 * speedMultiplier);
                         obstacleSpeed = Math.min(0.3, 0.12 * speedMultiplier);
                         speedText.setAttribute('value', 'Speed: ' + speedMultiplier.toFixed(1) + 'x');
+                        
+                        // Update level based on score
+                        updateLevel();
                     }
                 }, 100);
                 
@@ -709,7 +781,7 @@
                 }
             });
             
-            // Wait for scene to load, then setup VR and start game
+                    // Wait for scene to load, then setup VR and start game
             let scene = document.querySelector('a-scene');
             if (scene.hasLoaded) {
                 initializeGround();
@@ -726,4 +798,3 @@
     </script>
 </body>
 </html>
-
