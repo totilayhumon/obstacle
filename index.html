@@ -3,7 +3,7 @@
 <head>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
-    <title>Obstacle Avoidance Game - Complete VR Ready</title>
+    <title>Obstacle Avoidance Game - Fixed Crouching</title>
 </head>
 <body>
     <a-scene background="color: #87CEEB" 
@@ -158,6 +158,11 @@
             let playerZ = 0;
             let rigY = 0;
             
+            // Player dimensions for collision detection
+            let playerHeight = 1.8;
+            let playerWidth = 0.5;
+            let playerDepth = 0.5;
+            
             // VR state tracking
             let isVR = false;
             let leftControllerData = {};
@@ -203,22 +208,16 @@
                 if (leftController) {
                     leftController.addEventListener('thumbstickmoved', handleLeftThumbstick);
                     leftController.addEventListener('triggerdown', handleLeftTrigger);
-                    leftController.addEventListener('triggerup', handleLeftTriggerUp);
                     leftController.addEventListener('gripdown', handleLeftGrip);
                     leftController.addEventListener('gripup', handleLeftGripUp);
-                    leftController.addEventListener('xbuttondown', handleXButton);
-                    leftController.addEventListener('ybuttondown', handleYButton);
                 }
                 
                 // Right controller event listeners
                 if (rightController) {
                     rightController.addEventListener('thumbstickmoved', handleRightThumbstick);
                     rightController.addEventListener('triggerdown', handleRightTrigger);
-                    rightController.addEventListener('triggerup', handleRightTriggerUp);
                     rightController.addEventListener('gripdown', handleRightGrip);
                     rightController.addEventListener('gripup', handleRightGripUp);
-                    rightController.addEventListener('abuttondown', handleAButton);
-                    rightController.addEventListener('bbuttondown', handleBButton);
                 }
             }
             
@@ -237,18 +236,10 @@
                 }
             }
             
-            function handleLeftTriggerUp() {
-                // Trigger released
-            }
-            
             function handleRightTrigger() {
                 if (gameRunning && !isJumping && !isCrouching) {
                     jump();
                 }
-            }
-            
-            function handleRightTriggerUp() {
-                // Trigger released
             }
             
             function handleLeftGrip() {
@@ -256,8 +247,6 @@
                     startCrouch();
                 }
                 leftControllerData.grip = true;
-                
-                // Check for restart (both grips pressed)
                 checkForVRRestart();
             }
             
@@ -273,8 +262,6 @@
                     startCrouch();
                 }
                 rightControllerData.grip = true;
-                
-                // Check for restart (both grips pressed)
                 checkForVRRestart();
             }
             
@@ -285,32 +272,9 @@
                 rightControllerData.grip = false;
             }
             
-            function handleXButton() {
-                // Left controller X button - could be used for special actions
-                if (gameRunning && !isJumping && !isCrouching) {
-                    jump();
-                }
-            }
-            
-            function handleYButton() {
-                // Left controller Y button - could be used for special actions
-            }
-            
-            function handleAButton() {
-                // Right controller A button - could be used for special actions
-                if (gameRunning && !isJumping && !isCrouching) {
-                    jump();
-                }
-            }
-            
-            function handleBButton() {
-                // Right controller B button - could be used for special actions
-            }
-            
             // Check if both grips are pressed for VR restart
             function checkForVRRestart() {
                 if (!gameRunning && leftControllerData.grip && rightControllerData.grip) {
-                    // Remove all obstacles
                     obstacles.forEach(obstacleObj => {
                         if (obstacleObj.element && obstacleObj.element.parentNode) {
                             obstacleObj.element.remove();
@@ -321,16 +285,17 @@
                 }
             }
             
-            // Movement functions
+            // Movement functions with proper collision box updates
             function jump() {
                 if (isJumping || isCrouching) return;
                 isJumping = true;
                 
                 if (isVR) {
-                    rigY = 1.2; // VR jump height
+                    rigY = 1.2;
                     rig.setAttribute('position', `${playerX} ${rigY} ${playerZ}`);
+                    playerY = 1.6 + rigY; // Update collision detection position
                 } else {
-                    playerY = 2.8; // Desktop jump height
+                    playerY = 2.8;
                 }
                 
                 setTimeout(() => {
@@ -338,12 +303,13 @@
                         if (isVR) {
                             rigY = isCrouching ? -0.4 : 0;
                             rig.setAttribute('position', `${playerX} ${rigY} ${playerZ}`);
+                            playerY = 1.6 + rigY;
                         } else {
                             playerY = isCrouching ? 1.2 : 1.6;
                         }
                         isJumping = false;
                     }
-                }, 700); // jump duration
+                }, 700);
             }
             
             function startCrouch() {
@@ -351,12 +317,17 @@
                 isCrouching = true;
                 
                 if (isVR) {
-                    rigY = -0.4; // VR crouch
+                    rigY = -0.4;
                     rig.setAttribute('position', `${playerX} ${rigY} ${playerZ}`);
+                    playerY = 1.6 + rigY; // This makes playerY = 1.2
+                    playerHeight = 1.2; // Reduce collision height
                 } else {
                     playerY = 1.2;
                     player.setAttribute('height', '1.2');
+                    playerHeight = 1.2;
                 }
+                
+                console.log('Crouching - playerY:', playerY, 'playerHeight:', playerHeight);
             }
             
             function stopCrouch() {
@@ -366,10 +337,15 @@
                 if (isVR) {
                     rigY = 0;
                     rig.setAttribute('position', `${playerX} ${rigY} ${playerZ}`);
+                    playerY = 1.6;
+                    playerHeight = 1.8;
                 } else {
                     playerY = 1.6;
                     player.setAttribute('height', '1.8');
+                    playerHeight = 1.8;
                 }
+                
+                console.log('Standing - playerY:', playerY, 'playerHeight:', playerHeight);
             }
             
             function updateInstructionsForVR() {
@@ -398,6 +374,7 @@
                 playerY = 1.6;
                 playerZ = 0;
                 rigY = 0;
+                playerHeight = 1.8;
                 
                 rig.setAttribute('position', `${playerX} ${rigY} ${playerZ}`);
                 player.setAttribute('position', `${playerX} ${playerY} ${playerZ}`);
@@ -433,10 +410,9 @@
                     if (gameRunning) {
                         score += 10;
                         scoreText.setAttribute('value', 'Score: ' + score);
-                        // Increase difficulty over time
                         let speedMultiplier = 1 + (score * 0.00005);
                         playerSpeed = Math.min(0.25, 0.12 * speedMultiplier);
-                        obstacleSpeed = Math.min(0.3, 0.12 * speedMultiplier);
+                                               obstacleSpeed = Math.min(0.3, 0.12 * speedMultiplier);
                         speedText.setAttribute('value', 'Speed: ' + speedMultiplier.toFixed(1) + 'x');
                     }
                 }, 100);
@@ -461,7 +437,7 @@
                     // Spawn in a wider area around the player's path
                     let xPos = (Math.random() - 0.5) * 16; // Much wider spawn area (-8 to 8)
                     let zPos = playerZ - (15 + Math.random() * 15); // Spawn 15-30 units ahead
-                    let yPos = 0.5 + Math.random() * 2; // Random height between 0.5 and 2.5
+                    let yPos = 0.5 + Math.random() * 2.5; // Random height between 0.5 and 3.0
                     
                     obstacle.setAttribute('position', `${xPos} ${yPos} ${zPos}`);
                     obstacle.setAttribute('color', colors[Math.floor(Math.random() * colors.length)]);
@@ -501,9 +477,52 @@
                     document.querySelector('a-scene').appendChild(obstacle);
                     obstacles.push({
                         element: obstacle,
-                        size: size
+                        size: size,
+                        position: {x: xPos, y: yPos, z: zPos}
                     });
                 }
+            }
+            
+            // FIXED COLLISION DETECTION - This was the main problem!
+            function checkCollision(obstacleObj) {
+                let obstacle = obstacleObj.element;
+                let pos = obstacle.getAttribute('position');
+                if (!pos) return false;
+                
+                // Get current player dimensions based on state
+                let currentPlayerHeight = isCrouching ? 1.2 : 1.8;
+                let playerBottom = playerY - (currentPlayerHeight / 2);
+                let playerTop = playerY + (currentPlayerHeight / 2);
+                
+                // Get obstacle dimensions
+                let obstacleSize = obstacleObj.size;
+                let obstacleBottom = pos.y - (obstacleSize / 2);
+                let obstacleTop = pos.y + (obstacleSize / 2);
+                
+                // Check X collision (left/right)
+                let xCollision = Math.abs(pos.x - playerX) < (obstacleSize * 0.7 + playerWidth / 2);
+                
+                // Check Z collision (forward/backward)
+                let zCollision = Math.abs(pos.z - playerZ) < (obstacleSize * 0.7 + playerDepth / 2);
+                
+                // Check Y collision (up/down) - This is the key fix!
+                let yCollision = !(playerTop < obstacleBottom || playerBottom > obstacleTop);
+                
+                // Debug logging
+                if (xCollision && zCollision) {
+                    console.log('Near obstacle:', {
+                        isCrouching: isCrouching,
+                        playerY: playerY,
+                        playerBottom: playerBottom,
+                        playerTop: playerTop,
+                        obstacleBottom: obstacleBottom,
+                        obstacleTop: obstacleTop,
+                        yCollision: yCollision,
+                        currentPlayerHeight: currentPlayerHeight
+                    });
+                }
+                
+                return xCollision && zCollision && yCollision;
             }
             
             // Update game logic
@@ -537,6 +556,8 @@
                 // Update positions
                 if (isVR) {
                     rig.setAttribute('position', `${playerX} ${rigY} ${playerZ}`);
+                    // Update playerY for collision detection in VR
+                    playerY = 1.6 + rigY;
                 } else {
                     player.setAttribute('position', `${playerX} ${playerY} ${playerZ}`);
                     camera.setAttribute('position', `${playerX} ${playerY} ${playerZ}`);
@@ -562,12 +583,8 @@
                         continue;
                     }
                     
-                    // Check collision with size-aware detection
-                    let collisionDistance = obstacleObj.size * 0.8;
-                    if (Math.abs(pos.x - playerX) < collisionDistance && 
-                        Math.abs(pos.z - playerZ) < collisionDistance &&
-                        playerY < pos.y + obstacleObj.size && 
-                        playerY + 1.8 > pos.y - obstacleObj.size * 0.5) {
+                    // Use the fixed collision detection
+                    if (checkCollision(obstacleObj)) {
                         gameOver();
                         return;
                     }
