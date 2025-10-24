@@ -3,7 +3,7 @@
 <head>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
-    <title>Obstacle Avoidance Game - Color-Changing Ground</title>
+    <title>Obstacle Avoidance Game - Environmental Scenery</title>
 </head>
 <body>
     <a-scene background="color: #87CEEB" 
@@ -166,11 +166,13 @@
             let score = 0;
             let gameRunning = false;
             let obstacles = [];
+            let sceneryObjects = []; // New array for scenery
             let playerSpeed = 0.12;
             let obstacleSpeed = 0.12;
             let scoreInterval;
             let obstacleInterval;
             let gameLoopInterval;
+            let sceneryInterval; // New interval for scenery
             
             // Ground management
             let groundPlanes = [];
@@ -178,18 +180,18 @@
             let currentGroundColor = 'green';
             let currentLevel = 0;
             
-            // Level system with colors and names
+            // Level system with colors, names, and scenery
             const levels = [
-                { threshold: 0, color: 'green', name: 'Grassland', skyColor: '#87CEEB' },
-                { threshold: 1000, color: 'yellow', name: 'Desert', skyColor: '#F4A460' },
-                { threshold: 2500, color: 'orange', name: 'Canyon', skyColor: '#FF6347' },
-                { threshold: 4500, color: 'brown', name: 'Mountain', skyColor: '#8B4513' },
-                { threshold: 7000, color: 'gray', name: 'Stone Valley', skyColor: '#696969' },
-                { threshold: 10000, color: 'purple', name: 'Crystal Cave', skyColor: '#4B0082' },
-                { threshold: 15000, color: 'blue', name: 'Ice Realm', skyColor: '#4169E1' },
-                { threshold: 22000, color: 'red', name: 'Lava Fields', skyColor: '#8B0000' },
-                { threshold: 30000, color: 'black', name: 'Shadow Realm', skyColor: '#1C1C1C' },
-                { threshold: 50000, color: 'gold', name: 'Golden Paradise', skyColor: '#FFD700' }
+                { threshold: 0, color: 'green', name: 'Grassland', skyColor: '#87CEEB', scenery: 'trees' },
+                { threshold: 1000, color: 'yellow', name: 'Desert', skyColor: '#F4A460', scenery: 'pyramids' },
+                { threshold: 2500, color: 'orange', name: 'Canyon', skyColor: '#FF6347', scenery: 'hills' },
+                { threshold: 4500, color: 'brown', name: 'Mountain', skyColor: '#8B4513', scenery: 'mountains' },
+                { threshold: 7000, color: 'gray', name: 'Stone Valley', skyColor: '#696969', scenery: 'rocks' },
+                { threshold: 10000, color: 'purple', name: 'Crystal Cave', skyColor: '#4B0082', scenery: 'crystals' },
+                { threshold: 15000, color: 'blue', name: 'Ice Realm', skyColor: '#4169E1', scenery: 'ice' },
+                { threshold: 22000, color: 'red', name: 'Lava Fields', skyColor: '#8B0000', scenery: 'volcanoes' },
+                { threshold: 30000, color: 'black', name: 'Shadow Realm', skyColor: '#1C1C1C', scenery: 'portals' },
+                { threshold: 50000, color: 'gold', name: 'Golden Paradise', skyColor: '#FFD700', scenery: 'coins' }
             ];
             
             // Player variables
@@ -247,6 +249,174 @@
                 ];
             }
             
+            // Create scenery based on current level
+            function createScenery(sceneryType, x, z) {
+                let scenery;
+                
+                switch(sceneryType) {
+                    case 'trees':
+                        // Create tree with trunk and leaves
+                        scenery = document.createElement('a-entity');
+                        let trunk = document.createElement('a-cylinder');
+                        trunk.setAttribute('position', '0 1.5 0');
+                        trunk.setAttribute('height', '3');
+                        trunk.setAttribute('radius', '0.3');
+                        trunk.setAttribute('color', '#8B4513');
+                        
+                        let leaves = document.createElement('a-sphere');
+                        leaves.setAttribute('position', '0 3.5 0');
+                        leaves.setAttribute('radius', '1.5');
+                        leaves.setAttribute('color', '#228B22');
+                        
+                        scenery.appendChild(trunk);
+                        scenery.appendChild(leaves);
+                        break;
+                        
+                    case 'pyramids':
+                        scenery = document.createElement('a-cone');
+                        scenery.setAttribute('radius-bottom', '3');
+                        scenery.setAttribute('height', '6');
+                        scenery.setAttribute('color', '#DAA520');
+                        scenery.setAttribute('position', `0 3 0`);
+                        break;
+                        
+                    case 'hills':
+                        scenery = document.createElement('a-sphere');
+                        scenery.setAttribute('radius', '4');
+                        scenery.setAttribute('color', '#CD853F');
+                        scenery.setAttribute('position', `0 2 0`);
+                        scenery.setAttribute('scale', '1 0.5 1');
+                        break;
+                        
+                    case 'mountains':
+                        scenery = document.createElement('a-cone');
+                        scenery.setAttribute('radius-bottom', '5');
+                        scenery.setAttribute('height', '10');
+                        scenery.setAttribute('color', '#696969');
+                        scenery.setAttribute('position', `0 5 0`);
+                        break;
+                        
+                    case 'rocks':
+                        scenery = document.createElement('a-dodecahedron');
+                        scenery.setAttribute('radius', '2');
+                        scenery.setAttribute('color', '#A9A9A9');
+                        scenery.setAttribute('position', `0 2 0`);
+                        scenery.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 20000');
+                        break;
+                        
+                    case 'crystals':
+                        scenery = document.createElement('a-octahedron');
+                        scenery.setAttribute('radius', '2.5');
+                        scenery.setAttribute('color', '#9932CC');
+                        scenery.setAttribute('position', `0 2.5 0`);
+                        scenery.setAttribute('animation', 'property: rotation; to: 360 360 360; loop: true; dur: 3000');
+                        break;
+                        
+                    case 'ice':
+                        scenery = document.createElement('a-cone');
+                        scenery.setAttribute('radius-bottom', '2');
+                        scenery.setAttribute('height', '8');
+                        scenery.setAttribute('color', '#B0E0E6');
+                        scenery.setAttribute('position', `0 4 0`);
+                        scenery.setAttribute('opacity', '0.8');
+                        break;
+                        
+                    case 'volcanoes':
+                        // Create volcano with lava glow
+                        scenery = document.createElement('a-entity');
+                        let volcanoBase = document.createElement('a-cone');
+                        volcanoBase.setAttribute('radius-bottom', '4');
+                        volcanoBase.setAttribute('height', '8');
+                        volcanoBase.setAttribute('color', '#8B0000');
+                        volcanoBase.setAttribute('position', '0 4 0');
+                        
+                        let lavaGlow = document.createElement('a-sphere');
+                        lavaGlow.setAttribute('radius', '1');
+                        lavaGlow.setAttribute('color', '#FF4500');
+                        lavaGlow.setAttribute('position', '0 8 0');
+                        lavaGlow.setAttribute('animation', 'property: scale; to: 1.5 1.5 1.5; dir: alternate; loop: true; dur: 1000');
+                        
+                        scenery.appendChild(volcanoBase);
+                        scenery.appendChild(lavaGlow);
+                        break;
+                        
+                    case 'portals':
+                        scenery = document.createElement('a-torus');
+                        scenery.setAttribute('radius', '3');
+                        scenery.setAttribute('radius-tubular', '0.5');
+                        scenery.setAttribute('color', '#8A2BE2');
+                        scenery.setAttribute('position', `0 3 0`);
+                        scenery.setAttribute('rotation', '90 0 0');
+                        scenery.setAttribute('animation', 'property: rotation; to: 90 360 0; loop: true; dur: 4000');
+                        break;
+                        
+                    case 'coins':
+                        scenery = document.createElement('a-cylinder');
+                        scenery.setAttribute('radius', '1');
+                        scenery.setAttribute('height', '0.2');
+                        scenery.setAttribute('color', '#FFD700');
+                        scenery.setAttribute('position', `0 2 0`);
+                        scenery.setAttribute('rotation', '0 0 90');
+                        scenery.setAttribute('animation', 'property: rotation; to: 0 360 90; loop: true; dur: 2000');
+                        break;
+                        
+                    default:
+                        scenery = document.createElement('a-box');
+                        scenery.setAttribute('width', '1');
+                        scenery.setAttribute('height', '1');
+                        scenery.setAttribute('depth', '1');
+                        scenery.setAttribute('color', 'gray');
+                        scenery.setAttribute('position', `0 0.5 0`);
+                }
+                
+                // Set final position for scenery
+                scenery.setAttribute('position', `${x} ${scenery.getAttribute('position').y} ${z}`);
+                
+                return scenery;
+            }
+            
+            // Spawn scenery objects
+            function spawnScenery() {
+                if (!gameRunning) return;
+                
+                let currentLevelData = levels[currentLevel];
+                let sceneryType = currentLevelData.scenery;
+                
+                // Spawn scenery on both sides of the path
+                for (let i = 0; i < 2; i++) {
+                    let side = i === 0 ? -1 : 1; // Left or right side
+                    let xPos = side * (12 + Math.random() * 8); // 12-20 units from center
+                    let zPos = playerZ - (20 + Math.random() * 30); // Spawn ahead
+                    
+                    let scenery = createScenery(sceneryType, xPos, zPos);
+                    document.querySelector('a-scene').appendChild(scenery);
+                    
+                    sceneryObjects.push({
+                        element: scenery,
+                        position: {x: xPos, y: 0, z: zPos}
+                    });
+                }
+            }
+            
+            // Clean up old scenery objects
+            function updateScenery() {
+                for (let i = sceneryObjects.length - 1; i >= 0; i--) {
+                    let sceneryObj = sceneryObjects[i];
+                    let scenery = sceneryObj.element;
+                    
+                    if (!scenery || !scenery.parentNode) {
+                        sceneryObjects.splice(i, 1);
+                        continue;
+                    }
+                    
+                    let pos = scenery.getAttribute('position');
+                    if (pos && pos.z > playerZ + 50) {
+                        scenery.remove();
+                        sceneryObjects.splice(i, 1);
+                    }
+                }
+            }
+            
             // Get current level based on score
             function getCurrentLevel() {
                 for (let i = levels.length - 1; i >= 0; i--) {
@@ -279,7 +449,7 @@
                         }
                     });
                     
-                    console.log(`Level up! Now in: ${levelData.name}`);
+                    console.log(`Level up! Now in: ${levelData.name} with ${levelData.scenery}`);
                 }
             }
             
@@ -407,6 +577,15 @@
                         }
                     });
                     obstacles = [];
+                    
+                    // Clean up scenery too
+                    sceneryObjects.forEach(sceneryObj => {
+                        if (sceneryObj.element && sceneryObj.element.parentNode) {
+                            sceneryObj.element.remove();
+                        }
+                    });
+                    sceneryObjects = [];
+                    
                     startGame();
                 }
             }
@@ -488,6 +667,7 @@
                 score = 0;
                 gameRunning = true;
                 obstacles = [];
+                sceneryObjects = []; // Reset scenery
                 playerSpeed = 0.12;
                 obstacleSpeed = 0.12;
                 currentLevel = 0;
@@ -534,6 +714,7 @@
                 if (scoreInterval) clearInterval(scoreInterval);
                 if (obstacleInterval) clearInterval(obstacleInterval);
                 if (gameLoopInterval) clearInterval(gameLoopInterval);
+                if (sceneryInterval) clearInterval(sceneryInterval); // Clear scenery interval
                 
                 // Start score counter
                 scoreInterval = setInterval(() => {
@@ -553,6 +734,9 @@
                 // Start spawning obstacles more frequently
                 obstacleInterval = setInterval(spawnObstacle, 1200);
                 
+                // Start spawning scenery
+                sceneryInterval = setInterval(spawnScenery, 3000); // Spawn scenery every 3 seconds
+                
                 // Start game loop
                 gameLoopInterval = setInterval(updateGame, 16); // ~60fps
             }
@@ -570,7 +754,7 @@
                     // Spawn in a wider area around the player's path
                     let xPos = (Math.random() - 0.5) * 16; // Much wider spawn area (-8 to 8)
                     let zPos = playerZ - (15 + Math.random() * 15); // Spawn 15-30 units ahead
-                    let yPos = 0.5 + Math.random() * 2.5; // Random height between 0.5 and 3.0
+                                        let yPos = 0.5 + Math.random() * 2.5; // Random height between 0.5 and 3.0
                     
                     obstacle.setAttribute('position', `${xPos} ${yPos} ${zPos}`);
                     obstacle.setAttribute('color', colors[Math.floor(Math.random() * colors.length)]);
@@ -654,6 +838,9 @@
                 // Update infinite ground
                 updateGround();
                 
+                // Update scenery
+                updateScenery();
+                
                 // Handle left/right movement
                 if (isVR) {
                     // VR thumbstick movement
@@ -721,6 +908,7 @@
                 if (scoreInterval) clearInterval(scoreInterval);
                 if (obstacleInterval) clearInterval(obstacleInterval);
                 if (gameLoopInterval) clearInterval(gameLoopInterval);
+                if (sceneryInterval) clearInterval(sceneryInterval);
                 
                 // Hide instructions
                 instructionsText.setAttribute('visible', false);
@@ -749,6 +937,15 @@
                         }
                     });
                     obstacles = [];
+                    
+                    // Remove all scenery
+                    sceneryObjects.forEach(sceneryObj => {
+                        if (sceneryObj.element && sceneryObj.element.parentNode) {
+                            sceneryObj.element.remove();
+                        }
+                    });
+                    sceneryObjects = [];
+                    
                     startGame();
                     return;
                 }
@@ -781,7 +978,7 @@
                 }
             });
             
-                    // Wait for scene to load, then setup VR and start game
+            // Wait for scene to load, then setup VR and start game
             let scene = document.querySelector('a-scene');
             if (scene.hasLoaded) {
                 initializeGround();
